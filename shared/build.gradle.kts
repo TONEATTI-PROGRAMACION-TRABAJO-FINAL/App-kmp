@@ -44,6 +44,14 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+
+            // ==================== AGREGADAS EN ESTA REFACTORIZACIÓN ===================
+            // Dependencias nuevas para la BottomBar de navegación entre 3 pantallas:
+            //   - Navegación entre pestañas (NavHost + NavController de JetBrains).
+            implementation(libs.androidx.navigation.compose)
+            //   - Iconos Material de las pestañas (Icons.Filled.Search/DateRange/Settings).
+            implementation(libs.compose.material.iconsCore)
+            // ==========================================================================
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
