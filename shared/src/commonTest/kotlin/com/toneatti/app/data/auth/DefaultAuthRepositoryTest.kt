@@ -46,6 +46,31 @@ class DefaultAuthRepositoryTest {
     private fun repository(status: HttpStatusCode, body: String = ""): DefaultAuthRepository =
         repository { respond(body, status, headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())) }
 
+    /** El registro exitoso no guarda sesión: el backend no devuelve token al registrar. */
+    @Test
+    fun registroExitosoNoGuardaSesion() = runTest {
+        val repository = repository(
+            HttpStatusCode.Created,
+            """{"externalId":"id-1","email":"ana@example.com","firstName":"Ana","lastName":"Pérez"}""",
+        )
+
+        val result = repository.register("ana@example.com", "secreta123", "Ana", "Pérez")
+
+        assertEquals(AuthResult.Success(Unit), result)
+        assertNull(storage.session)
+    }
+
+    /** El registro fallido devuelve el error del backend. */
+    @Test
+    fun registroConEmailRepetidoDevuelveElError() = runTest {
+        val repository = repository(HttpStatusCode.Conflict)
+
+        val result = repository.register("ana@example.com", "secreta123", "Ana", "Pérez")
+
+        assertEquals(AuthResult.Failure(AuthError.EmailAlreadyRegistered), result)
+        assertNull(storage.session)
+    }
+
     /** Un login exitoso guarda el token con su vencimiento absoluto. */
     @Test
     fun loginExitosoGuardaLaSesion() = runTest {

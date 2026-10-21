@@ -16,6 +16,7 @@ object AuthErrorMessages {
      */
     fun messageFor(error: AuthError): String = when (error) {
         AuthError.InvalidCredentials -> "Email o contraseña incorrectos."
+        AuthError.EmailAlreadyRegistered -> "Ese email ya está registrado."
         is AuthError.InvalidData -> "Revisá los datos ingresados."
         AuthError.Network -> "No se pudo conectar con el servidor. Revisá tu conexión e intentá de nuevo."
         AuthError.Unauthorized, AuthError.UserNotFound -> "Tu sesión no es válida. Iniciá sesión de nuevo."
