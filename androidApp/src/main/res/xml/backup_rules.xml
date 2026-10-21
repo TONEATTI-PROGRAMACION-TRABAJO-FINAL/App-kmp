@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Reglas de backup para Android 11 (API 30) o anterior.
+    La sesión del usuario está cifrada con una clave del Android Keystore que no
+    viaja en el backup: restaurarla en otro dispositivo sería inútil, así que no se respalda.
+    El nombre debe coincidir con PREFERENCES_NAME de AndroidTokenStorage.
+-->
+<full-backup-content>
+    <exclude domain="sharedpref" path="user_session.xml" />
+</full-backup-content>
