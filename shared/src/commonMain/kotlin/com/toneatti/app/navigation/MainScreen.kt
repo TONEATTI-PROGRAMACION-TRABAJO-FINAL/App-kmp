@@ -24,7 +24,9 @@ import com.toneatti.app.ui.screens.BookingsScreen
 import com.toneatti.app.ui.screens.ProfessionalsScreen
 import com.toneatti.app.ui.screens.SettingsScreen
 import com.toneatti.app.ui.screens.auth.LoginScreen
+import com.toneatti.app.ui.screens.auth.RegisterScreen
 import com.toneatti.app.viewmodel.LoginViewModel
+import com.toneatti.app.viewmodel.RegisterViewModel
 import com.toneatti.app.viewmodel.SessionState
 import com.toneatti.app.viewmodel.SessionViewModel
 
@@ -39,7 +41,8 @@ import com.toneatti.app.viewmodel.SessionViewModel
  *    indicador de carga, porque el destino inicial del `NavHost` no puede cambiar después.
  * 2. `Scaffold` reserva el espacio de la barra inferior y aplica los insets.
  * 3. [AppBottomBar] recibe los destinos, la ruta activa y el callback de selección;
- *    solo se muestra en las pestañas, no en las pantallas de [AuthDestination].
+ *    solo se muestra en las pestañas, no en las pantallas de [AuthDestination]
+ *    (login y registro).
  * 4. `NavHost` resuelve cada destino a su pantalla.
  *
  * Las pantallas son clases cuyas instancias se crean aquí una sola vez con `remember`.
@@ -80,6 +83,7 @@ class MainScreen {
         // recomposición (no se recrean los objetos en cada pasada).
         val bottomBar = remember { AppBottomBar() }
         val loginScreen = remember { LoginScreen() }
+        val registerScreen = remember { RegisterScreen() }
         val professionalsScreen = remember { ProfessionalsScreen() }
         val bookingsScreen = remember { BookingsScreen() }
         val settingsScreen = remember { SettingsScreen() }
@@ -87,7 +91,7 @@ class MainScreen {
         Scaffold(
             modifier = modifier,
             bottomBar = {
-                // Solo las pestañas muestran la barra; el login no.
+                // Solo las pestañas muestran la barra; el login y el registro no.
                 if (AppDestination.fromRoute(currentRoute) != null) {
                     bottomBar.Content(
                         // `entries` devuelve todas las constantes del enum en orden de declaración.
@@ -134,6 +138,29 @@ class MainScreen {
                         onEmailChange = loginViewModel::onEmailChange,
                         onPasswordChange = loginViewModel::onPasswordChange,
                         onSubmit = loginViewModel::submit,
+                        onGoToRegister = {
+                            navController.navigate(AuthDestination.Register.route) { launchSingleTop = true }
+                        },
+                    )
+                }
+                composable(AuthDestination.Register.route) {
+                    val registerViewModel = viewModel { RegisterViewModel(AppContainer.authRepository) }
+                    val registerState by registerViewModel.uiState.collectAsStateWithLifecycle()
+
+                    // Registro + login automático exitosos: a la pantalla principal.
+                    LaunchedEffect(registerState.loggedIn) {
+                        if (registerState.loggedIn) navigateToMain(navController)
+                    }
+
+                    registerScreen.Content(
+                        state = registerState,
+                        onFirstNameChange = registerViewModel::onFirstNameChange,
+                        onLastNameChange = registerViewModel::onLastNameChange,
+                        onEmailChange = registerViewModel::onEmailChange,
+                        onPasswordChange = registerViewModel::onPasswordChange,
+                        onSubmit = registerViewModel::submit,
+                        // El registro siempre se abre desde el login: volver es quitarlo de la pila.
+                        onGoToLogin = { navController.popBackStack() },
                     )
                 }
                 composable(AppDestination.Professionals.route) {
@@ -182,8 +209,9 @@ class MainScreen {
     }
 
     /**
-     * Tras un login exitoso, va a la primera pestaña y quita el login de la pila,
-     * para que pulsar atrás salga de la app en lugar de volver al formulario.
+     * Tras un login exitoso (directo o después del registro), va a la primera pestaña y
+     * quita el login de la pila, junto con el registro si estaba encima, para que pulsar
+     * atrás salga de la app en lugar de volver a un formulario.
      *
      * @param navController controlador de navegación sobre el que se actúa.
      */

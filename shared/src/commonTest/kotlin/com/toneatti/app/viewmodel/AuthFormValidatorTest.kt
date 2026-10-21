@@ -58,4 +58,83 @@ class AuthFormValidatorTest {
         assertNull(AuthFormValidator.loginPasswordError("ñ".repeat(36)))
         assertNotNull(AuthFormValidator.loginPasswordError("ñ".repeat(37)))
     }
+
+    // ----- Registro (reglas de UserRequest) -----
+
+    /** Arma un email válido de exactamente [length] caracteres. */
+    private fun emailOfLength(length: Int): String {
+        val domain = "@example.com"
+        return "a".repeat(length - domain.length) + domain
+    }
+
+    @Test
+    fun registroAceptaEmailDe254Caracteres() {
+        assertNull(AuthFormValidator.registerEmailError(emailOfLength(254)))
+    }
+
+    @Test
+    fun registroRechazaEmailDe255Caracteres() {
+        assertNotNull(AuthFormValidator.registerEmailError(emailOfLength(255)))
+    }
+
+    @Test
+    fun registroRechazaEmailVacioOSinFormato() {
+        assertNotNull(AuthFormValidator.registerEmailError(""))
+        assertNotNull(AuthFormValidator.registerEmailError("ana@example"))
+    }
+
+    @Test
+    fun registroRechazaContrasenaVacia() {
+        assertNotNull(AuthFormValidator.registerPasswordError(""))
+        assertNotNull(AuthFormValidator.registerPasswordError("        "))
+    }
+
+    @Test
+    fun registroRechazaContrasenaDe7Caracteres() {
+        assertNotNull(AuthFormValidator.registerPasswordError("a".repeat(7)))
+    }
+
+    @Test
+    fun registroAceptaContrasenaDe8Caracteres() {
+        assertNull(AuthFormValidator.registerPasswordError("a".repeat(8)))
+    }
+
+    @Test
+    fun registroAceptaContrasenaDe72BytesYRechazaLaDe73() {
+        assertNull(AuthFormValidator.registerPasswordError("a".repeat(72)))
+        assertNotNull(AuthFormValidator.registerPasswordError("a".repeat(73)))
+    }
+
+    /** 37 "ñ" son 37 caracteres (pasa el mínimo) pero 74 bytes (supera el máximo). */
+    @Test
+    fun registroCuentaElMaximoEnBytes() {
+        assertNull(AuthFormValidator.registerPasswordError("ñ".repeat(36)))
+        assertNotNull(AuthFormValidator.registerPasswordError("ñ".repeat(37)))
+    }
+
+    @Test
+    fun nombreYApellidoVaciosSonInvalidos() {
+        assertNotNull(AuthFormValidator.firstNameError(""))
+        assertNotNull(AuthFormValidator.lastNameError("  "))
+    }
+
+    @Test
+    fun nombreYApellidoDe1CaracterSonInvalidos() {
+        assertNotNull(AuthFormValidator.firstNameError("A"))
+        assertNotNull(AuthFormValidator.lastNameError("P"))
+    }
+
+    @Test
+    fun nombreYApellidoDe2Y100CaracteresSonValidos() {
+        assertNull(AuthFormValidator.firstNameError("Al"))
+        assertNull(AuthFormValidator.firstNameError("a".repeat(100)))
+        assertNull(AuthFormValidator.lastNameError("Li"))
+        assertNull(AuthFormValidator.lastNameError("a".repeat(100)))
+    }
+
+    @Test
+    fun nombreYApellidoDe101CaracteresSonInvalidos() {
+        assertNotNull(AuthFormValidator.firstNameError("a".repeat(101)))
+        assertNotNull(AuthFormValidator.lastNameError("a".repeat(101)))
+    }
 }
