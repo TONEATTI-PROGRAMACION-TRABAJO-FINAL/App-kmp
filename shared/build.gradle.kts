@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.androidMultiplatformLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -34,6 +35,9 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.compose.uiTooling)
+
+            // Agregada para autenticación: motor HTTP de Android para Ktor.
+            implementation(libs.ktor.client.okhttp)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -52,9 +56,19 @@ kotlin {
             //   - Iconos Material de las pestañas (Icons.Filled.Search/DateRange/Settings).
             implementation(libs.compose.material.iconsCore)
             // ==========================================================================
+
+            // ===================== AGREGADAS PARA AUTENTICACIÓN =======================
+            // Cliente HTTP contra Servicio-turnos con cuerpos JSON (kotlinx-serialization).
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.contentNegotiation)
+            implementation(libs.ktor.serialization.kotlinxJson)
+            // ==========================================================================
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            // Agregadas para autenticación: servidor HTTP simulado y Dispatchers.setMain.
+            implementation(libs.ktor.client.mock)
+            implementation(libs.kotlinx.coroutinesTest)
         }
     }
 }
