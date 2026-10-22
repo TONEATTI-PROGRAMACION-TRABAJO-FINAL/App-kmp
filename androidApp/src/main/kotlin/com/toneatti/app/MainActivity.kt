@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import com.toneatti.app.platform.AndroidContext
 
 /**
  * Punto de entrada de la aplicación en Android.
@@ -20,6 +21,10 @@ class MainActivity : ComponentActivity() {
         // el `Scaffold` de MainScreen se encarga de los insets.
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+
+        // Registra el Context de la aplicación para las implementaciones de Android
+        // del código común (por ejemplo, el almacenamiento cifrado del token).
+        AndroidContext.init(applicationContext)
 
         setContent {
             App().Content()

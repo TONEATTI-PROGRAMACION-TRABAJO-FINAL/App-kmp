@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Reglas de backup y transferencia entre dispositivos para Android 12 (API 31) o superior.
+    Mismo motivo que backup_rules.xml: la sesión cifrada no sirve sin la clave del
+    Keystore de este dispositivo. El nombre debe coincidir con PREFERENCES_NAME de AndroidTokenStorage.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="user_session.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="user_session.xml" />
+    </device-transfer>
+</data-extraction-rules>
