@@ -12,6 +12,18 @@ import com.toneatti.app.data.session.UserSession
 interface AuthRepository {
 
     /**
+     * Crea la cuenta del usuario. No inicia sesión ni guarda nada: el backend no
+     * devuelve token al registrar, así que quien llama debe hacer [login] después.
+     *
+     * @param email email, ya sin espacios alrededor.
+     * @param password contraseña tal como la escribió el usuario.
+     * @param firstName nombre, ya sin espacios alrededor.
+     * @param lastName apellido, ya sin espacios alrededor.
+     * @return éxito si la cuenta se creó; el [AuthError] en caso contrario.
+     */
+    suspend fun register(email: String, password: String, firstName: String, lastName: String): AuthResult<Unit>
+
+    /**
      * Inicia sesión y, si las credenciales son válidas, guarda el JWT del usuario.
      *
      * @param email email del usuario, ya sin espacios alrededor.
@@ -47,6 +59,18 @@ class DefaultAuthRepository(
     private val tokenStorage: TokenStorage,
     private val nowMillis: () -> Long,
 ) : AuthRepository {
+
+    override suspend fun register(
+        email: String,
+        password: String,
+        firstName: String,
+        lastName: String,
+    ): AuthResult<Unit> =
+        when (val result = authApi.register(email, password, firstName, lastName)) {
+            // Los datos del usuario creado no se usan todavía.
+            is AuthResult.Success -> AuthResult.Success(Unit)
+            is AuthResult.Failure -> result
+        }
 
     override suspend fun login(email: String, password: String): AuthResult<Unit> =
         when (val result = authApi.login(email, password)) {

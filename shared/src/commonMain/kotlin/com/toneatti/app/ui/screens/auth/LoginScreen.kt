@@ -15,6 +15,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
@@ -42,6 +43,7 @@ class LoginScreen {
      * @param onEmailChange el usuario editó el email.
      * @param onPasswordChange el usuario editó la contraseña.
      * @param onSubmit el usuario pidió ingresar (botón o tecla "Listo" del teclado).
+     * @param onGoToRegister el usuario quiere crear una cuenta.
      * @param modifier modificador aplicado al contenedor raíz de la pantalla.
      */
     @Composable
@@ -50,6 +52,7 @@ class LoginScreen {
         onEmailChange: (String) -> Unit,
         onPasswordChange: (String) -> Unit,
         onSubmit: () -> Unit,
+        onGoToRegister: () -> Unit,
         modifier: Modifier = Modifier,
     ) {
         Column(
@@ -115,6 +118,13 @@ class LoginScreen {
                 } else {
                     Text("Ingresar")
                 }
+            }
+            TextButton(
+                onClick = onGoToRegister,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !state.isLoading,
+            ) {
+                Text("Crear cuenta")
             }
         }
     }

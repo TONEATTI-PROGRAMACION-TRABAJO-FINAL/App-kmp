@@ -15,4 +15,7 @@ enum class AuthDestination(
 ) {
     /** Inicio de sesión. */
     Login(route = "login"),
+
+    /** Registro de usuario; se llega desde el login. */
+    Register(route = "register"),
 }

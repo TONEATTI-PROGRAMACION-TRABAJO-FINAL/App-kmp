@@ -12,6 +12,9 @@ sealed interface AuthError {
     /** 401 de `POST /users/login`: email o contraseña incorrectos (el backend no distingue cuál). */
     data object InvalidCredentials : AuthError
 
+    /** 409 de `POST /users`: ya existe una cuenta con ese email. */
+    data object EmailAlreadyRegistered : AuthError
+
     /**
      * 400: el backend rechazó los datos. No debería ocurrir si la validación de la app
      * coincide con la del backend.

@@ -160,10 +160,72 @@ class AuthApiTest {
         assertEquals(AuthResult.Failure(AuthError.UserNotFound), api.me("jwt"))
     }
 
+    /** El registro envía POST /users con los cuatro campos en JSON. */
+    @Test
+    fun registerEnviaElCuerpoEsperado() = runTest {
+        val api = api { respond(USER_JSON, HttpStatusCode.Created, jsonHeaders) }
+
+        api.register("ana@example.com", "secreta123", "Ana", "Pérez")
+
+        val request = requests.single()
+        assertEquals(HttpMethod.Post, request.method)
+        assertEquals("http://10.0.2.2:8080/users", request.url.toString())
+        val body = Json.parseToJsonElement(request.body.toByteArray().decodeToString()).jsonObject
+        assertEquals("ana@example.com", body.getValue("email").jsonPrimitive.content)
+        assertEquals("secreta123", body.getValue("password").jsonPrimitive.content)
+        assertEquals("Ana", body.getValue("firstName").jsonPrimitive.content)
+        assertEquals("Pérez", body.getValue("lastName").jsonPrimitive.content)
+    }
+
+    /** 201 del registro devuelve el usuario creado. */
+    @Test
+    fun registerExitosoDevuelveElUsuario() = runTest {
+        val api = api { respond(USER_JSON, HttpStatusCode.Created, jsonHeaders) }
+
+        assertEquals(
+            AuthResult.Success(UserResponse("id-1", "ana@example.com", "Ana", "Pérez")),
+            api.register("ana@example.com", "secreta123", "Ana", "Pérez"),
+        )
+    }
+
+    /** 409 del registro: el email ya está registrado. */
+    @Test
+    fun register409EsEmailYaRegistrado() = runTest {
+        val api = api { respond(problem(409, "Email already registered"), HttpStatusCode.Conflict, problemHeaders) }
+
+        assertEquals(
+            AuthResult.Failure(AuthError.EmailAlreadyRegistered),
+            api.register("ana@example.com", "secreta123", "Ana", "Pérez"),
+        )
+    }
+
+    /** 400 del registro conserva el `detail` del problem+json. */
+    @Test
+    fun register400SonDatosInvalidos() = runTest {
+        val api = api { respond(problem(400, "Invalid request content."), HttpStatusCode.BadRequest, problemHeaders) }
+
+        assertEquals(
+            AuthResult.Failure(AuthError.InvalidData("Invalid request content.")),
+            api.register("ana@example.com", "corta", "A", "P"),
+        )
+    }
+
+    /** Un 200 no es el éxito del registro (el backend responde 201): se trata como inesperado. */
+    @Test
+    fun registerConCodigoDistintoDe201EsInesperado() = runTest {
+        val api = api { respond(USER_JSON, HttpStatusCode.OK, jsonHeaders) }
+
+        assertEquals(
+            AuthResult.Failure(AuthError.Unexpected(200, null)),
+            api.register("ana@example.com", "secreta123", "Ana", "Pérez"),
+        )
+    }
+
     private fun problem(status: Int, detail: String): String =
         """{"type":"about:blank","title":"Error","status":$status,"detail":"$detail","instance":"/users"}"""
 
     private companion object {
         const val TOKEN_JSON = """{"accessToken":"jwt","tokenType":"Bearer","expiresIn":86400}"""
+        const val USER_JSON = """{"externalId":"id-1","email":"ana@example.com","firstName":"Ana","lastName":"Pérez"}"""
     }
 }

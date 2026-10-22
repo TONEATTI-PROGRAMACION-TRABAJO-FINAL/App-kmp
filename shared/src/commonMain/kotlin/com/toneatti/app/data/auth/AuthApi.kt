@@ -2,6 +2,7 @@ package com.toneatti.app.data.auth
 
 import com.toneatti.app.data.auth.dto.LoginRequest
 import com.toneatti.app.data.auth.dto.ProblemDetail
+import com.toneatti.app.data.auth.dto.RegisterRequest
 import com.toneatti.app.data.auth.dto.TokenResponse
 import com.toneatti.app.data.auth.dto.UserResponse
 import io.ktor.client.HttpClient
@@ -27,6 +28,37 @@ import kotlinx.io.IOException
  * @param client cliente creado con `TurnosHttpClient`.
  */
 class AuthApi(private val client: HttpClient) {
+
+    /**
+     * `POST /users`: 201 con el usuario creado; 409 si el email ya está registrado.
+     *
+     * No devuelve token: para usar la cuenta hay que iniciar sesión después.
+     *
+     * @param email email del usuario.
+     * @param password contraseña.
+     * @param firstName nombre.
+     * @param lastName apellido.
+     */
+    suspend fun register(
+        email: String,
+        password: String,
+        firstName: String,
+        lastName: String,
+    ): AuthResult<UserResponse> =
+        request(
+            send = {
+                client.post("users") {
+                    contentType(ContentType.Application.Json)
+                    setBody(
+                        RegisterRequest(email = email, password = password, firstName = firstName, lastName = lastName),
+                    )
+                }
+            },
+            successStatus = HttpStatusCode.Created,
+            errorFor = { status ->
+                if (status == HttpStatusCode.Conflict) AuthError.EmailAlreadyRegistered else null
+            },
+        )
 
     /**
      * `POST /users/login`: 200 con el token; 401 si las credenciales no son válidas.
