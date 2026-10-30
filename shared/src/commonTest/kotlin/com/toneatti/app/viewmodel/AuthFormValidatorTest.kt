@@ -43,20 +43,25 @@ class AuthFormValidatorTest {
     }
 
     @Test
-    fun contrasenaDe72BytesEsValida() {
-        assertNull(AuthFormValidator.loginPasswordError("a".repeat(72)))
+    fun contrasenaDe128CaracteresEsValida() {
+        assertNull(AuthFormValidator.loginPasswordError("a".repeat(128)))
     }
 
     @Test
-    fun contrasenaDe73BytesEsInvalida() {
-        assertNotNull(AuthFormValidator.loginPasswordError("a".repeat(73)))
+    fun contrasenaDe129CaracteresEsInvalida() {
+        assertNotNull(AuthFormValidator.loginPasswordError("a".repeat(129)))
     }
 
-    /** "ñ" ocupa 2 bytes en UTF-8: 37 caracteres son 74 bytes aunque sean menos de 72 caracteres. */
+    /**
+     * El límite se cuenta en unidades UTF-16, como `@Size` en el backend: "ñ" es una
+     * unidad aunque ocupe 2 bytes en UTF-8, y un emoji son dos.
+     */
     @Test
-    fun elLimiteSeCuentaEnBytesNoEnCaracteres() {
-        assertNull(AuthFormValidator.loginPasswordError("ñ".repeat(36)))
-        assertNotNull(AuthFormValidator.loginPasswordError("ñ".repeat(37)))
+    fun elLimiteSeCuentaEnUnidadesUtf16() {
+        assertNull(AuthFormValidator.loginPasswordError("ñ".repeat(128)))
+        assertNotNull(AuthFormValidator.loginPasswordError("ñ".repeat(129)))
+        assertNull(AuthFormValidator.loginPasswordError("😀".repeat(64)))
+        assertNotNull(AuthFormValidator.loginPasswordError("😀".repeat(64) + "a"))
     }
 
     // ----- Registro (reglas de UserRequest) -----
@@ -100,16 +105,25 @@ class AuthFormValidatorTest {
     }
 
     @Test
-    fun registroAceptaContrasenaDe72BytesYRechazaLaDe73() {
-        assertNull(AuthFormValidator.registerPasswordError("a".repeat(72)))
-        assertNotNull(AuthFormValidator.registerPasswordError("a".repeat(73)))
+    fun registroAceptaContrasenaDe128CaracteresYRechazaLaDe129() {
+        assertNull(AuthFormValidator.registerPasswordError("a".repeat(128)))
+        assertNotNull(AuthFormValidator.registerPasswordError("a".repeat(129)))
     }
 
-    /** 37 "ñ" son 37 caracteres (pasa el mínimo) pero 74 bytes (supera el máximo). */
+    /** 128 "ñ" son 256 bytes en UTF-8, pero 128 unidades UTF-16: es válida, como en el backend. */
     @Test
-    fun registroCuentaElMaximoEnBytes() {
-        assertNull(AuthFormValidator.registerPasswordError("ñ".repeat(36)))
-        assertNotNull(AuthFormValidator.registerPasswordError("ñ".repeat(37)))
+    fun registroCuentaElMaximoEnUnidadesUtf16() {
+        assertNull(AuthFormValidator.registerPasswordError("ñ".repeat(128)))
+        assertNotNull(AuthFormValidator.registerPasswordError("ñ".repeat(129)))
+        assertNull(AuthFormValidator.registerPasswordError("😀".repeat(64)))
+        assertNotNull(AuthFormValidator.registerPasswordError("😀".repeat(64) + "a"))
+    }
+
+    /** 4 emojis son 8 unidades UTF-16: alcanzan el mínimo, como con `@Size(min = 8)`. */
+    @Test
+    fun registroCuentaElMinimoEnUnidadesUtf16() {
+        assertNull(AuthFormValidator.registerPasswordError("😀".repeat(4)))
+        assertNotNull(AuthFormValidator.registerPasswordError("😀".repeat(3) + "a"))
     }
 
     @Test
