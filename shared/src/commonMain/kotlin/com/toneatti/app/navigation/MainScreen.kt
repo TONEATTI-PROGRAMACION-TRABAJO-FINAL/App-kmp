@@ -26,6 +26,7 @@ import com.toneatti.app.ui.screens.SettingsScreen
 import com.toneatti.app.ui.screens.auth.LoginScreen
 import com.toneatti.app.ui.screens.auth.RegisterScreen
 import com.toneatti.app.viewmodel.LoginViewModel
+import com.toneatti.app.viewmodel.ProfessionalsViewModel
 import com.toneatti.app.viewmodel.RegisterViewModel
 import com.toneatti.app.viewmodel.SessionState
 import com.toneatti.app.viewmodel.SessionViewModel
@@ -44,6 +45,9 @@ import com.toneatti.app.viewmodel.SessionViewModel
  *    solo se muestra en las pestañas, no en las pantallas de [AuthDestination]
  *    (login y registro).
  * 4. `NavHost` resuelve cada destino a su pantalla.
+ * 5. Si la sesión se descarta mientras se usa la app (token vencido o rechazado con un
+ *    401 en cualquier pantalla), [SessionViewModel] lo avisa y aquí se vuelve al login.
+ *    Es el único lugar que reacciona a eso: las pantallas no repiten esa lógica.
  *
  * Las pantallas son clases cuyas instancias se crean aquí una sola vez con `remember`.
  * Ninguna recibe el `NavController` ni su ViewModel: solo datos y callbacks. Los
@@ -75,9 +79,13 @@ class MainScreen {
         val backStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = backStackEntry?.destination?.route
 
-        // Comprobación de la sesión guardada; se hace una sola vez por Activity.
-        val sessionViewModel = viewModel { SessionViewModel(AppContainer.authRepository) }
+        // Comprobación de la sesión guardada (una sola vez por Activity) y avisos de
+        // sesión descartada mientras se usa la app.
+        val sessionViewModel = viewModel {
+            SessionViewModel(AppContainer.authRepository, AppContainer.sessionManager.expirations)
+        }
         val sessionState by sessionViewModel.state.collectAsStateWithLifecycle()
+        val sessionExpired by sessionViewModel.sessionExpired.collectAsStateWithLifecycle()
 
         // Instancias creadas una sola vez por composición y reutilizadas en cada
         // recomposición (no se recrean los objetos en cada pasada).
@@ -164,7 +172,15 @@ class MainScreen {
                     )
                 }
                 composable(AppDestination.Professionals.route) {
-                    professionalsScreen.Content()
+                    val professionalsViewModel = viewModel { ProfessionalsViewModel(AppContainer.catalogRepository) }
+                    val professionalsState by professionalsViewModel.uiState.collectAsStateWithLifecycle()
+
+                    professionalsScreen.Content(
+                        state = professionalsState,
+                        onCategorySelected = professionalsViewModel::onCategorySelected,
+                        onRetryCategories = professionalsViewModel::retryCategories,
+                        onRetryProfessionals = professionalsViewModel::retryProfessionals,
+                    )
                 }
                 composable(AppDestination.Bookings.route) {
                     bookingsScreen.Content()
@@ -175,6 +191,14 @@ class MainScreen {
                         darkTheme = darkTheme,
                         onDarkThemeChange = onDarkThemeChange,
                     )
+                }
+            }
+
+            // Va después del NavHost, que es quien le asigna el grafo al NavController.
+            LaunchedEffect(sessionExpired) {
+                if (sessionExpired) {
+                    navigateToLogin(navController)
+                    sessionViewModel.onSessionExpiredHandled()
                 }
             }
         }
@@ -218,6 +242,22 @@ class MainScreen {
     private fun navigateToMain(navController: NavHostController) {
         navController.navigate(AppDestination.Professionals.route) {
             popUpTo(AuthDestination.Login.route) { inclusive = true }
+        }
+    }
+
+    /**
+     * Con la sesión descartada, vuelve al login y vacía toda la pila.
+     *
+     * `popUpTo(graph.id)` con `inclusive` quita todas las pestañas sin guardar su estado:
+     * sus ViewModels se descartan y, al volver a entrar, otro usuario no ve lo que quedó
+     * cargado. Sirve también si la app arrancó en el login, porque el grafo siempre está
+     * en la base de la pila.
+     *
+     * @param navController controlador de navegación sobre el que se actúa.
+     */
+    private fun navigateToLogin(navController: NavHostController) {
+        navController.navigate(AuthDestination.Login.route) {
+            popUpTo(navController.graph.id) { inclusive = true }
         }
     }
 }
